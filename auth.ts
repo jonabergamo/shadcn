@@ -26,8 +26,11 @@ const credentialsConfig = CredentialsProvider({
   },
 });
 
-const config = {
+export const config = {
   providers: [Google, credentialsConfig, github],
+  pages: {
+    signIn: "/signin",
+  },
 } satisfies NextAuthConfig;
 
 export const { handlers, auth, signIn, signOut } = NextAuth(config);

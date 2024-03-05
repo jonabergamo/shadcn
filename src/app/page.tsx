@@ -1,8 +1,5 @@
 "use client";
-import UserInfo from "@/components/UserInfo";
-import Link from "next/link";
-import AppBar from "./appbar";
-import { SessionProvider, getSession, useSession } from "next-auth/react";
+
 import {
   Card,
   CardContent,

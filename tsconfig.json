@@ -19,7 +19,8 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
-      "auth": ["./auth.ts"]
+      "auth": ["./auth.ts"],
+      "routes": ["./routes.ts"]
     }
   },
   "include": [

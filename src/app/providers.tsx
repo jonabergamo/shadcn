@@ -10,7 +10,6 @@ export default function Providers({ children }: { children: ReactNode }) {
         attribute="class"
         defaultTheme="system"
         enableSystem
-        disableTransitionOnChange
         themes={["orange", "purple", "green", "dark"]}>
         {children}
       </ThemeProvider>
