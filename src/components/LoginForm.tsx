@@ -34,7 +34,7 @@ export default function Login({ className, callbackUrl }: Props) {
       email: email.current,
       password: pass.current,
       redirect: true,
-      callbackUrl: callbackUrl || "/",
+      callbackUrl: callbackUrl || "/lock/dashboard",
     });
   }
 
@@ -46,7 +46,7 @@ export default function Login({ className, callbackUrl }: Props) {
   async function onGoogle() {
     await signIn("google", {
       redirect: true,
-      callbackUrl: callbackUrl || "/",
+      callbackUrl: callbackUrl || "/lock/dashboard",
     });
   }
 

@@ -31,6 +31,18 @@ export const config = {
   pages: {
     signIn: "/signin",
   },
+  callbacks: {
+    authorized({ request, auth }) {
+      const nextUrl = request.nextUrl;
+      const { pathname } = nextUrl;
+      const isLoggedIn = !!auth;
+
+      if (pathname.startsWith("/lock")) {
+        return isLoggedIn;
+      }
+      return true;
+    },
+  },
 } satisfies NextAuthConfig;
 
 export const { handlers, auth, signIn, signOut } = NextAuth(config);

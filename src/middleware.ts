@@ -1,37 +1,39 @@
-import {
-  DEFAULT_LOGIN_REDIRECT,
-  apiRoutePrefix,
-  authRoutes,
-  publicRoutes,
-} from "routes";
-import { auth } from "auth";
+export { auth as middleware } from "auth";
 
-export default auth((req) => {
-  const { nextUrl } = req;
-  const isLoggedIn = !!req.auth;
+// import {
+//   DEFAULT_LOGIN_REDIRECT,
+//   apiRoutePrefix,
+//   authRoutes,
+//   publicRoutes,
+// } from "routes";
+// import { auth } from "auth";
 
-  const isApiAuthRoute = nextUrl.pathname.startsWith(apiRoutePrefix);
-  const isPublicRoute = publicRoutes.includes(nextUrl.pathname);
-  const isAuthRoute = authRoutes.includes(nextUrl.pathname);
+// export default auth((req) => {
+//   const { nextUrl } = req;
+//   const isLoggedIn = !!req.auth;
 
-  if (isApiAuthRoute) {
-    return null;
-  }
+//   const isApiAuthRoute = nextUrl.pathname.startsWith(apiRoutePrefix);
+//   const isPublicRoute = publicRoutes.includes(nextUrl.pathname);
+//   const isAuthRoute = authRoutes.includes(nextUrl.pathname);
 
-  if (isAuthRoute) {
-    if (isLoggedIn) {
-      return Response.redirect(new URL(DEFAULT_LOGIN_REDIRECT, nextUrl));
-    }
-    return null;
-  }
+//   if (isApiAuthRoute) {
+//     return null;
+//   }
 
-  if (!isLoggedIn && !isPublicRoute) {
-    return Response.redirect(new URL("/signin", nextUrl));
-  }
+//   if (isAuthRoute) {
+//     if (isLoggedIn) {
+//       return Response.redirect(new URL(DEFAULT_LOGIN_REDIRECT, nextUrl));
+//     }
+//     return null;
+//   }
 
-  return null;
-});
+//   if (!isLoggedIn && !isPublicRoute) {
+//     return Response.redirect(new URL("/signin", nextUrl));
+//   }
 
-export const config = {
-  matcher: ["/((?!.+\\.[\\w]+$|_next).*)", "/", "/(api|trpc)(.*)"],
-};
+//   return null;
+// });
+
+// export const config = {
+//   matcher: ["/((?!.+\\.[\\w]+$|_next).*)", "/", "/(api|trpc)(.*)"],
+// };
