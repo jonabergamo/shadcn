@@ -1,12 +1,16 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import { fabric } from "fabric";
+import CanvasControls from "./CanvasControls";
+import { ColorResult } from "react-color";
 
 export default function Canvas() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const fabricCanvasRef = useRef<fabric.Canvas | null>(null);
   const [drawingMode, setDrawingMode] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const [color, setColor] = useState("#ff0000");
+  const [width, setWidth] = useState(2);
 
   useEffect(() => {
     if (canvasRef.current && !fabricCanvasRef.current) {
@@ -88,8 +92,8 @@ export default function Canvas() {
         width: 100,
         height: 50,
         fill: "transparent",
-        stroke: "red",
-        strokeWidth: 3,
+        stroke: color,
+        strokeWidth: width,
         selectable: true,
         lockUniScaling: true,
       });
@@ -119,8 +123,8 @@ export default function Canvas() {
   const handleAddLine = () => {
     if (fabricCanvasRef.current) {
       const line = new fabric.Line([50, 100, 200, 100], {
-        stroke: "red",
-        strokeWidth: 2,
+        stroke: color,
+        strokeWidth: width,
         selectable: true,
         left: fabricCanvasRef.current.width! / 2,
         top: fabricCanvasRef.current.width! / 2,
@@ -157,17 +161,18 @@ export default function Canvas() {
           const canvasWidth = fabricCanvasRef.current?.width!;
           const canvasHeight =
             imgElement.height * (canvasWidth / imgElement.width);
-          const fabricImage = new fabric.Image(imgElement, {
-            left: 0,
-            top: 0,
-            scaleX: canvasWidth / imgElement.width,
-            scaleY: canvasHeight / imgElement.height,
-          });
 
           // Definindo o tamanho do canvas para combinar com a imagem carregada
           fabricCanvasRef.current!.setDimensions({
             width: canvasWidth,
             height: canvasHeight,
+          });
+
+          const fabricImage = new fabric.Image(imgElement, {
+            left: 0,
+            top: 0,
+            scaleX: canvasWidth / imgElement.width,
+            scaleY: canvasHeight / imgElement.height,
           });
 
           fabricCanvasRef.current!.setBackgroundImage(
@@ -185,19 +190,19 @@ export default function Canvas() {
       const arrow = new fabric.Group(
         [
           // Linha principal da seta
-          new fabric.Line([0, 0, 50, 0], {
-            stroke: "red",
-            strokeWidth: 2,
+          new fabric.Line([0, 0, 100, 0], {
+            stroke: color,
+            strokeWidth: width * 2,
             selectable: true,
             originX: "center",
             originY: "center",
           }),
           // Cabeça da seta (triângulo)
           new fabric.Triangle({
-            width: 10,
-            height: 15,
-            fill: "red",
-            left: 50, // Ajuste para que a cabeça da seta esteja diretamente conectada à linha
+            width: width * 8,
+            height: width * 8,
+            fill: color,
+            left: 100, // Ajuste para que a cabeça da seta esteja diretamente conectada à linha
             top: 0, // Ajuste para alinhar verticalmente o centro do triângulo com a linha
             angle: 90,
             originX: "center",
@@ -260,17 +265,22 @@ export default function Canvas() {
   };
 
   return (
-    <div className="w-full h-full">
-      <button onClick={handleAddRectangle}>Adicionar Retângulo</button>
-      <button onClick={handleAddLine}>Adicionar Linha</button>
-      <button onClick={handleDownload}>Baixar</button>
-      <button onClick={handleAddText}>Adicionar Texto</button>
-      <button onClick={handleAddArrow}>Adicionar Seta</button>
-
-      <input type="file" accept="image/*" onChange={handleAddImage} />
-      <div
-        className="h-[70vh] max-w-[60vw] overflow-hidden bg-white"
-        ref={containerRef}>
+    <div className=" bg-white rounded-xl ">
+      <CanvasControls
+        handleAddRectangle={handleAddRectangle}
+        handleAddLine={handleAddLine}
+        handleDownload={handleDownload}
+        handleAddText={handleAddText}
+        handleAddArrow={handleAddArrow}
+        handleAddImage={handleAddImage}
+        onChangeColor={(newColor: string) => {
+          setColor(newColor);
+        }}
+        onWidthChange={(newWidth: number) => {
+          setWidth(newWidth);
+        }}
+      />
+      <div className="h-[70vh] w-full overflow-hidden " ref={containerRef}>
         <canvas ref={canvasRef} className="w-full h-full" />
       </div>
     </div>
