@@ -1,182 +1,237 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import { fabric } from "fabric";
-import { v1 as uuid } from "uuid";
 
 export default function Canvas() {
-  const canvasRef = useRef(null);
-  const containerRef = useRef(null);
-  let canvas;
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const fabricCanvasRef = useRef<fabric.Canvas | null>(null);
   const [drawingMode, setDrawingMode] = useState(false);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    // Inicializar o canvas usando o useRef
-    canvas = new fabric.Canvas(canvasRef.current, {
-      isDrawingMode: false,
-    });
+    if (canvasRef.current && !fabricCanvasRef.current) {
+      fabricCanvasRef.current = new fabric.Canvas(canvasRef.current, {
+        isDrawingMode: drawingMode,
+        backgroundImage: "",
+        width: containerRef.current?.clientWidth,
+      });
+      fabricCanvasRef.current.selection = false;
 
-    // Configurar algumas propriedades do canvas
-    canvas.selection = false;
+      // Acessível globalmente para facilitar a depuração
+      (window as any).canvas = fabricCanvasRef.current;
 
-    // Adicionar o canvas como um objeto global para facilitar o acesso
-    window.canvas = canvas;
+      const handleMouseDown = (opt: fabric.IEvent) => {
+        const evt = opt.e as MouseEvent;
+        if (evt.altKey) {
+          (fabricCanvasRef.current as any).isDragging = true;
+          fabricCanvasRef.current!.selection = false;
+          (fabricCanvasRef.current as any).lastPosX = evt.clientX;
+          (fabricCanvasRef.current as any).lastPosY = evt.clientY;
+        }
+      };
+
+      const handleMouseMove = (opt: fabric.IEvent) => {
+        if ((fabricCanvasRef.current as any).isDragging) {
+          const e = opt.e as MouseEvent;
+          const vpt = fabricCanvasRef.current!.viewportTransform!;
+          vpt[4] += e.clientX - (fabricCanvasRef.current as any).lastPosX;
+          vpt[5] += e.clientY - (fabricCanvasRef.current as any).lastPosY;
+          fabricCanvasRef.current!.requestRenderAll();
+          (fabricCanvasRef.current as any).lastPosX = e.clientX;
+          (fabricCanvasRef.current as any).lastPosY = e.clientY;
+        }
+      };
+
+      const handleMouseUp = () => {
+        fabricCanvasRef.current!.setViewportTransform(
+          fabricCanvasRef.current!.viewportTransform!
+        );
+        (fabricCanvasRef.current as any).isDragging = false;
+        fabricCanvasRef.current!.selection = true;
+      };
+
+      fabricCanvasRef.current.on("mouse:down", handleMouseDown);
+      fabricCanvasRef.current.on("mouse:move", handleMouseMove);
+      fabricCanvasRef.current.on("mouse:up", handleMouseUp);
+      fabricCanvasRef.current.on("mouse:wheel", function (opt) {
+        const e = opt.e as WheelEvent;
+        let zoom = fabricCanvasRef.current!.getZoom();
+        zoom *= 0.999 ** e.deltaY;
+        if (zoom > 20) zoom = 20;
+        if (zoom < 0.01) zoom = 0.01;
+        fabricCanvasRef.current!.zoomToPoint(
+          { x: e.offsetX, y: e.offsetY },
+          zoom
+        );
+        e.preventDefault();
+        e.stopPropagation();
+      });
+    }
 
     return () => {
-      // Limpar o canvas ao desmontar o componente para evitar vazamentos de memória
-      canvas.dispose();
+      if (fabricCanvasRef.current) {
+        fabricCanvasRef.current.off("mouse:down");
+        fabricCanvasRef.current.off("mouse:move");
+        fabricCanvasRef.current.off("mouse:up");
+        fabricCanvasRef.current.dispose();
+        fabricCanvasRef.current = null;
+      }
     };
-  }, []); // Executar isso apenas uma vez na montagem do componente
+  }, [drawingMode]);
 
+  // Adiciona um retângulo ao canvas
   const handleAddRectangle = () => {
-    // Criar um retângulo no centro do canvas
-    const rect = new fabric.Rect({
-      left: canvas.width / 2 - 50,
-      top: canvas.height / 2 - 50,
-      width: 100,
-      height: 50,
-      fill: "transparent",
-      stroke: "red",
-      strokeWidth: 3,
-      selectable: true,
-    });
-
-    // Adicionar o retângulo ao canvas
-    canvas.add(rect);
+    if (fabricCanvasRef.current) {
+      const rect = new fabric.Rect({
+        left: fabricCanvasRef.current.width! / 2 - 50,
+        top: fabricCanvasRef.current.height! / 2 - 50,
+        width: 100,
+        height: 50,
+        fill: "transparent",
+        stroke: "red",
+        strokeWidth: 3,
+        selectable: true,
+        lockUniScaling: true,
+      });
+      fabricCanvasRef.current.add(rect);
+    }
   };
 
+  // Listener para tecla Delete, para excluir objeto selecionado
   useEffect(() => {
-    // Configurar o ouvinte de teclado para excluir objetos selecionados
-    const handleKeyPress = (event) => {
-      if (event.code === "Delete") {
-        const activeObject = canvas.getActiveObject();
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if (event.code === "Delete" && fabricCanvasRef.current) {
+        const activeObject = fabricCanvasRef.current.getActiveObject();
         if (activeObject) {
-          canvas.remove(activeObject);
-          canvas.discardActiveObject();
-          canvas.renderAll();
+          fabricCanvasRef.current.remove(activeObject);
         }
       }
     };
 
-    // Adicionar o ouvinte de teclado
     window.addEventListener("keydown", handleKeyPress);
 
     return () => {
-      // Remover o ouvinte de teclado ao desmontar o componente
       window.removeEventListener("keydown", handleKeyPress);
     };
-  }, [canvas]);
+  }, []);
 
+  // Adiciona uma linha ao canvas
   const handleAddLine = () => {
-    // Criar uma linha no centro do canvas
-    const line = new fabric.Line([50, 50, 150, 50], {
-      stroke: "red",
-      strokeWidth: 3,
-      selectable: true,
-      angle: 90,
-    });
-
-    // Adicionar a linha ao canvas
-    canvas.add(line);
-  };
-
-  const handleDownload = () => {
-    const fabricImage = canvas.backgroundImage;
-
-    // Verificar se há uma imagem de fundo no canvas
-    if (fabricImage) {
-      const dataURL = canvas.toDataURL({
-        format: "png",
-        quality: 1,
+    if (fabricCanvasRef.current) {
+      const line = new fabric.Line([50, 100, 200, 100], {
+        stroke: "red",
+        strokeWidth: 2,
+        selectable: true,
+        left: fabricCanvasRef.current.width! / 2,
+        top: fabricCanvasRef.current.width! / 2,
+        angle: 90,
       });
-
-      const link = document.createElement("a");
-      link.href = dataURL;
-      link.download = "whiteboard.png";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      fabricCanvasRef.current.add(line);
     }
   };
 
-  const handleAddImage = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = function (e) {
-        const img = new Image();
-        img.src = e.target.result;
-        img.onload = function () {
-          const canvasWidth = 900;
-          const canvasHeight = img.height * (canvasWidth / img.width);
+  // Função para adicionar texto
+  const handleAddText = () => {
+    if (fabricCanvasRef.current) {
+      const text = new fabric.Textbox("Digite aqui", {
+        left: fabricCanvasRef.current.width! / 2,
+        top: fabricCanvasRef.current.height! / 2,
+        fontSize: 24,
+        fill: "#000",
+        selectable: true,
+        backgroundColor: "white",
+      });
+      fabricCanvasRef.current.add(text);
+    }
+  };
 
-          // Ajustar diretamente as dimensões da imagem para o tamanho do canvas
-          const fabricImage = new fabric.Image(img, {
+  const handleAddImage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files![0];
+    if (file && fabricCanvasRef.current) {
+      const reader = new FileReader();
+      reader.onload = function (e: ProgressEvent<FileReader>) {
+        const imgElement = new Image();
+        imgElement.src = e.target!.result as string;
+        imgElement.onload = function () {
+          // Ajustando a imagem para o tamanho do canvas
+          const canvasWidth = fabricCanvasRef.current?.width!;
+          const canvasHeight =
+            imgElement.height * (canvasWidth / imgElement.width);
+          const fabricImage = new fabric.Image(imgElement, {
             left: 0,
             top: 0,
-            scaleY: canvasHeight / img.height,
-            scaleX: canvasWidth / img.width,
+            scaleX: canvasWidth / imgElement.width,
+            scaleY: canvasHeight / imgElement.height,
           });
 
-          // Definir o tamanho do canvas igual ao da imagem
-          canvas.setDimensions({
+          // Definindo o tamanho do canvas para combinar com a imagem carregada
+          fabricCanvasRef.current!.setDimensions({
             width: canvasWidth,
             height: canvasHeight,
           });
 
-          canvas.setBackgroundImage(fabricImage, canvas.renderAll.bind(canvas));
+          fabricCanvasRef.current!.setBackgroundImage(
+            fabricImage,
+            fabricCanvasRef.current!.renderAll.bind(fabricCanvasRef.current)
+          );
         };
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleAddText = () => {
-    const defaultText = "Digite aqui";
-
-    // Criar um objeto de texto no centro do canvas
-    const text = new fabric.Text(defaultText, {
-      left: canvas.width / 2,
-      top: canvas.height / 2,
-      fontSize: 24,
-      fill: "black",
-      selectable: true,
-      backgroundColor: "white",
-    });
-
-    // Adicionar o texto ao canvas
-    canvas.add(text);
-  };
   const handleAddArrow = () => {
-    const arrow = new fabric.Group(
-      [
-        // Linha principal da seta
-        new fabric.Line([0, 0, 100, 0], {
-          stroke: "red",
-          strokeWidth: 2,
-          selectable: true,
-        }),
-
-        // Cabeça da seta (triângulo)
-        new fabric.Triangle({
-          width: 20,
-          height: 30,
-          fill: "red",
-          left: 130,
-          top: -9,
-          selectable: true,
+    if (fabricCanvasRef.current) {
+      const arrow = new fabric.Group(
+        [
+          // Linha principal da seta
+          new fabric.Line([0, 0, 50, 0], {
+            stroke: "red",
+            strokeWidth: 2,
+            selectable: true,
+            originX: "center",
+            originY: "center",
+          }),
+          // Cabeça da seta (triângulo)
+          new fabric.Triangle({
+            width: 10,
+            height: 15,
+            fill: "red",
+            left: 50, // Ajuste para que a cabeça da seta esteja diretamente conectada à linha
+            top: 0, // Ajuste para alinhar verticalmente o centro do triângulo com a linha
+            angle: 90,
+            originX: "center",
+            originY: "center",
+            selectable: true,
+          }),
+        ],
+        {
+          left: fabricCanvasRef.current.width! / 2 - 50,
+          top: fabricCanvasRef.current.height! / 2 - 15,
           angle: 90,
-        }),
-      ],
-      {
-        left: canvas.width / 2 - 50,
-        top: canvas.height / 2 - 15,
-        angle: 90,
-        selectable: true,
-      }
-    );
+          selectable: true,
+        }
+      );
 
-    // Adicionar a seta ao canvas
-    canvas.add(arrow);
+      // Adicionar a seta ao canvas
+      fabricCanvasRef.current.add(arrow);
+    }
+  };
+
+  // Função para baixar o conteúdo do canvas
+  const handleDownload = () => {
+    if (fabricCanvasRef.current) {
+      const dataURL = fabricCanvasRef.current.toDataURL({
+        format: "png",
+        quality: 1,
+      });
+      const link = document.createElement("a");
+      link.download = "canvas-image.png";
+      link.href = dataURL;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   return (
@@ -187,17 +242,11 @@ export default function Canvas() {
       <button onClick={handleAddText}>Adicionar Texto</button>
       <button onClick={handleAddArrow}>Adicionar Seta</button>
 
-      <button onClick={() => canvas.setZoom(canvas.getZoom() * 1.1)}>
-        Zoom In
-      </button>
-      <button onClick={() => canvas.setZoom(canvas.getZoom() / 1.1)}>
-        Zoom Out
-      </button>
       <input type="file" accept="image/*" onChange={handleAddImage} />
       <div
-        className="max-h-[400px] max-w-[900px] overflow-scroll"
+        className="max-h-[70vh] max-w-[60vw] overflow-hidden bg-red-500"
         ref={containerRef}>
-        <canvas ref={canvasRef} width={900} height={600} />
+        <canvas ref={canvasRef} className="w-full h-full" />
       </div>
     </div>
   );

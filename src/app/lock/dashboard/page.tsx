@@ -68,7 +68,6 @@ export default function Home() {
                         alt=""
                         width={300}
                         height={300}
-                        priority
                         quality={50}
                       />
                       <p className="text-4xl p-10">{name}</p>
