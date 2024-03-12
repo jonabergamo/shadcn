@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { fabric } from "fabric";
 import CanvasControls from "./CanvasControls";
 import { ColorResult } from "react-color";
@@ -13,9 +13,10 @@ export default function Canvas() {
   const [width, setWidth] = useState(2);
 
   useEffect(() => {
-    if (canvasRef.current && !fabricCanvasRef.current) {
+    if (!fabricCanvasRef.current) {
+      // Crie um novo canvas apenas se fabricCanvasRef.current não existe
       fabricCanvasRef.current = new fabric.Canvas(canvasRef.current, {
-        isDrawingMode: drawingMode,
+        isDrawingMode: false,
         backgroundImage: "",
         width: containerRef.current?.clientWidth,
       });
@@ -26,7 +27,7 @@ export default function Canvas() {
 
       const handleMouseDown = (opt: fabric.IEvent) => {
         const evt = opt.e as MouseEvent;
-        if (evt.altKey) {
+        if (evt.ctrlKey) {
           (fabricCanvasRef.current as any).isDragging = true;
           fabricCanvasRef.current!.selection = false;
           (fabricCanvasRef.current as any).lastPosX = evt.clientX;
@@ -81,7 +82,7 @@ export default function Canvas() {
         fabricCanvasRef.current = null;
       }
     };
-  }, [drawingMode]);
+  }, []);
 
   // Adiciona um retângulo ao canvas
   const handleAddRectangle = () => {

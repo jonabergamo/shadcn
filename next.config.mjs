@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    domains: ["images.dog.ceo"],
+    domains: ["images.dog.ceo", "lh3.googleusercontent.com"],
   },
 
   webpack: (config) => {

@@ -29,7 +29,7 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "src/app/api/auth/[...nextauth].js",
-    "src/app/lock/paint/page.jsx"
+    "src/app/lock/paint/page.tsx"
   ],
   "exclude": ["node_modules"]
 }
