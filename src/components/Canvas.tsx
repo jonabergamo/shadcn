@@ -187,22 +187,10 @@ export default function Canvas() {
       <button onClick={handleAddText}>Adicionar Texto</button>
       <button onClick={handleAddArrow}>Adicionar Seta</button>
 
-      <button
-        onClick={() =>
-          canvas.zoomToPoint(
-            { x: canvas.width / 2, y: containerRef.current.scrollTop },
-            canvas.getZoom() * 1.1
-          )
-        }>
+      <button onClick={() => canvas.setZoom(canvas.getZoom() * 1.1)}>
         Zoom In
       </button>
-      <button
-        onClick={() =>
-          canvas.zoomToPoint(
-            { x: canvas.width / 2, y: containerRef.current.scrollTop },
-            canvas.getZoom() / 1.1
-          )
-        }>
+      <button onClick={() => canvas.setZoom(canvas.getZoom() / 1.1)}>
         Zoom Out
       </button>
       <input type="file" accept="image/*" onChange={handleAddImage} />
