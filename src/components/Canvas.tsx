@@ -218,19 +218,44 @@ export default function Canvas() {
     }
   };
 
-  // Função para baixar o conteúdo do canvas
   const handleDownload = () => {
     if (fabricCanvasRef.current) {
-      const dataURL = fabricCanvasRef.current.toDataURL({
-        format: "png",
-        quality: 1,
-      });
-      const link = document.createElement("a");
-      link.download = "canvas-image.png";
-      link.href = dataURL;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // Exportar o estado atual do canvas para JSON
+      const json = fabricCanvasRef.current.toJSON();
+
+      // Criar um novo canvas temporário para o download
+      const tempCanvas = document.createElement("canvas");
+      tempCanvas.width = fabricCanvasRef.current.getWidth();
+      tempCanvas.height = fabricCanvasRef.current.getHeight();
+      const tempFabricCanvas = new fabric.Canvas(tempCanvas);
+
+      // Carregar o estado do canvas original no canvas temporário
+      tempFabricCanvas.loadFromJSON(json, () => {
+        // Ajustes após o carregamento, como redefinir zoom e posição
+        tempFabricCanvas.setZoom(1);
+        tempFabricCanvas.viewportTransform = [1, 0, 0, 1, 0, 0];
+        tempFabricCanvas.requestRenderAll();
+
+        // Use um timeout para garantir que o canvas seja renderizado antes de exportar
+        setTimeout(() => {
+          // Exportar a imagem do canvas temporário
+          const dataURL = tempFabricCanvas.toDataURL({
+            format: "png",
+            quality: 1,
+          });
+
+          // Proceder com o download
+          const link = document.createElement("a");
+          link.download = "canvas-image.png";
+          link.href = dataURL;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+
+          // Limpar após o download
+          tempFabricCanvas.dispose();
+        }, 100); // Ajuste este tempo se necessário
+      }); // Remova o terceiro argumento incorreto que era um array de strings
     }
   };
 
@@ -244,7 +269,7 @@ export default function Canvas() {
 
       <input type="file" accept="image/*" onChange={handleAddImage} />
       <div
-        className="max-h-[70vh] max-w-[60vw] overflow-hidden bg-red-500"
+        className="h-[70vh] max-w-[60vw] overflow-hidden bg-white"
         ref={containerRef}>
         <canvas ref={canvasRef} className="w-full h-full" />
       </div>
